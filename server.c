@@ -1,26 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 #include <errno.h>
-
 #include <netdb.h>
 #include <unistd.h>
-#include <pthread.h>
-
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 
-#define MSG_LEN 1024
-#define TIME_LEN 100
-#define NICK_LEN 20
-#define BACKLOG 10
+#include "utils.h"
 
-typedef struct PACKET {
-  char sender_nick[NICK_LEN];
-  char message[MSG_LEN];
-} PACKET;
+#define BACKLOG 10
 
 int main(int argc, char **argv) {
 
@@ -73,16 +65,18 @@ int main(int argc, char **argv) {
     printf("got connection from %s\n", ip4);
     // recv()
     while (1) {
-      PACKET p;
-      memset(&p, 0, sizeof(PACKET));
+      PACKET *p;
+      memset(p, 0, sizeof(PACKET));
       char recv_msg[MSG_LEN];
-      int bytes = recv(new_fd, (void *)&p, MSG_LEN, 0);
+      int bytes = recv(new_fd, (void *)p, MSG_LEN, 0);
       if (!bytes) {
         fprintf(stderr, "connection lost");
         break;
       }
       printf("received %d bytes\n", bytes);
-      printf("%s: %s", p.sender_nick, p.message);
+      printf("%s: %s", p->sender_nick, p->message);
+      // send the message to all connected clients
+      send_packet(new_fd, p);
       //printf("received %d bytes\nmessage: %s\n", bytes, recv_msg);
     }
   }

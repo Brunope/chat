@@ -12,6 +12,8 @@
 
 #include "utils.h"
 
+#define NUM_THREADS 2
+
 void *listener(void *user);
 void printp(PACKET *p);
 
@@ -29,8 +31,9 @@ int main(int argc, char **argv) {
   // argv[1] is hostname, argv[2] is portno
   self.sockfd = connect_to_server(argv[1], argv[2]);
   printf("connected to %s at port %s\n", argv[1], argv[2]);
-  pthread_create(NULL, NULL, listener, (void *) &self);
-  printf("started socket listener");
+  pthread_t threads[NUM_THREADS];
+  pthread_create(&threads[0], NULL, listener, (void *) &self);
+  printf("started socket listener\n");
   
 
   // start the input loop - send all input data to the server
@@ -48,10 +51,11 @@ void *listener(void *user) {
   PACKET p;
   int recvd;
 
+  USER *u = user;
   // read loop
   while (1) {
     memset(&p, 0, sizeof(PACKET));
-    recvd = recv(((USER *)user)->sockfd, (void *)&p, sizeof(PACKET), 0);
+    recvd = recv(u->sockfd, (void *)&p, sizeof(PACKET), 0);
     if (!recvd) {
       fprintf(stderr, "lost listener connection");
       break;

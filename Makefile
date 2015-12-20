@@ -6,12 +6,12 @@ SERVER_FILES = server.c utils.c
 
 all: client-server
 
-client-server: clean client server
+client-server: client server
 
-client:
+client: clean
 	$(CC) -o client $(CLIENT_FILES)
 
-server:
+server: clean
 	$(CC) -o server $(SERVER_FILES)
 
 clean:
