@@ -23,11 +23,10 @@ int main(int argc, char **argv) {
 
   int sockfd, new_fd;
 
-  struct addrinfo hints, *servinfo, *p;
+  struct addrinfo hints, *servinfo;
   struct sockaddr_storage client_addr;
   socklen_t sin_size;
   char ip4[INET_ADDRSTRLEN];
-  int yes = 1;
 
   memset(&hints, 0, sizeof(hints));
   hints.ai_family = AF_INET; // ipv4 only
@@ -65,19 +64,20 @@ int main(int argc, char **argv) {
     printf("got connection from %s\n", ip4);
     // recv()
     while (1) {
-      PACKET *p;
-      memset(p, 0, sizeof(PACKET));
-      char recv_msg[MSG_LEN];
-      int bytes = recv(new_fd, (void *)p, MSG_LEN, 0);
+      PACKET p;
+      memset(&p, 0, sizeof(PACKET));
+      int bytes = recv(new_fd, (void *)&p, MSG_LEN, 0);
       if (!bytes) {
         fprintf(stderr, "connection lost");
         break;
       }
-      printf("received %d bytes\n", bytes);
-      printf("%s: %s", p->sender_nick, p->message);
+      if (DEBUG == ON) {
+        printf("received %d bytes\n", bytes);
+      }
+      // print the packet
+      printp(&p);
       // send the message to all connected clients
-      send_packet(new_fd, p);
-      //printf("received %d bytes\nmessage: %s\n", bytes, recv_msg);
+      send_packet(new_fd, &p);
     }
   }
 }

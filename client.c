@@ -66,10 +66,4 @@ void *listener(void *user) {
   pthread_exit(NULL);
 }
 
-/**
- * Prints the contents of a PACKET
- */
-void printp(PACKET *p) {
-  printf("%s: %s\n", p->sender_nick, p->message);
-}
   

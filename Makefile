@@ -9,10 +9,10 @@ all: client-server
 client-server: client server
 
 client: clean
-	$(CC) -o client $(CLIENT_FILES)
+	$(CC) $(CFLAGS) -o client $(CLIENT_FILES)
 
 server: clean
-	$(CC) -o server $(SERVER_FILES)
+	$(CC) $(CFLAGS) -o server $(SERVER_FILES)
 
 clean:
 	rm -f client server

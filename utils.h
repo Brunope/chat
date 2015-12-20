@@ -17,3 +17,4 @@ typedef struct PACKET {
 int connect_to_server(const char *address, const char *port);
 void send_msg(USER *sender, char *msg);
 void send_packet(int sockfd, PACKET *p);
+void printp(PACKET *p);

@@ -39,11 +39,11 @@ int connect_to_server(const char *address, const char *port) {
  * Takes a message and USER, packages it up with the user nick and sends it.
  */
 void send_msg(USER *sender, char *msg) {
-  PACKET *p;
-  memset(p, 0, sizeof(PACKET));
-  strcpy(p->sender_nick, sender->nick);
-  strcpy(p->message, msg);
-  send_packet(sender->sockfd, p);
+  PACKET p;
+  memset(&p, 0, sizeof(PACKET));
+  strcpy(p.sender_nick, sender->nick);
+  strcpy(p.message, msg);
+  send_packet(sender->sockfd, &p);
 }
 
 void send_packet(int sockfd, PACKET *p) {
@@ -51,4 +51,11 @@ void send_packet(int sockfd, PACKET *p) {
   if (DEBUG == ON) {
     printf("send %d bytes\n", bytes);
   }
+}
+
+/**
+ * Prints the contents of a PACKET
+ */
+void printp(PACKET *p) {
+  printf("%s: %s\n", p->sender_nick, p->message);
 }
