@@ -44,7 +44,7 @@ void send_msg(USER *sender, char *msg) {
   strcpy(p.sender_nick, sender->nick);
   strcpy(p.message, msg);
   if (DEBUG == ON) {
-    printf("sending '%s' from '%s' (%d) bytes", p.message, p.sender_nick,
+    printf("sending '%s' from '%s' %lu bytes", p.message, p.sender_nick,
            sizeof(PACKET));
   }
   send_packet(sender->sockfd, &p);

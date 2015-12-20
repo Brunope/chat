@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
   // argv[1] is hostname, argv[2] is portno
   self.sockfd = connect_to_server(argv[1], argv[2]);
   printf("connected to %s at port %s\n", argv[1], argv[2]);
-  pthread_t threads[NUM_THREADS];
+  // pthread_t threads[NUM_THREADS];
   //pthread_create(&threads[0], NULL, listener, (void *) &self);
   printf("started socket listener\n");
   
