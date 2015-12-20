@@ -1,4 +1,4 @@
-#define MSG_LEN 256
+#define MSG_LEN 236
 #define NICK_LEN 20
 #define DEBUG 1
 #define OFF 0
