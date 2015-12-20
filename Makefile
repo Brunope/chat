@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g -std=gnu99 -Wall
+CFLAGS = -g -std=gnu99 -Wall -pthread
 NOWARN = -g -std=gnu99
 CLIENT_FILES = client.c utils.c
 SERVER_FILES = server.c utils.c
