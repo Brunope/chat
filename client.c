@@ -30,10 +30,11 @@ int main(int argc, char **argv) {
   strcpy(self.nick, "Anonymous"); // default nick
   // argv[1] is hostname, argv[2] is portno
   self.sockfd = connect_to_server(argv[1], argv[2]);
-  printf("connected to %s at port %s\n", argv[1], argv[2]);
+  printf("--- connected to %s at port %s ---\n", argv[1], argv[2]);
+  // start listening to the server for messages
   pthread_t threads[NUM_THREADS];
   pthread_create(&threads[0], NULL, listener, (void *) &self);
-  printf("started socket listener\n");
+  printf("--- started socket listener ---\n");
   
 
   // start the input loop - send all input data to the server
@@ -57,11 +58,11 @@ void *listener(void *user) {
     memset(&p, 0, sizeof(PACKET));
     recvd = recv(u->sockfd, (void *)&p, sizeof(PACKET), 0);
     if (!recvd) {
-      fprintf(stderr, "lost listener connection");
+      fprintf(stderr, "--- lost listener connection ---\n");
       break;
     } else if (recvd > 0) {
       if (DEBUG == ON) {
-        printf("received %d bytes\n", recvd);
+        printf("--- received %d bytes ---\n", recvd);
       }
       printp(&p);
     }

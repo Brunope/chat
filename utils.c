@@ -44,16 +44,19 @@ void send_msg(USER *sender, char *msg) {
   strcpy(p.sender_nick, sender->nick);
   strcpy(p.message, msg);
   if (DEBUG == ON) {
-    printf("sending \n%s from '%s' %lu bytes\n", p.message, p.sender_nick,
-           sizeof(PACKET));
+    printf("--- sending %lu bytes from %s ---\n", sizeof(PACKET), p.sender_nick);
   }
   send_packet(sender->sockfd, &p);
 }
 
+/**
+ * Takes a PACKET and a socket file descriptor, and sends the packet through
+ * the socket.
+ */
 void send_packet(int sockfd, PACKET *p) {
   int bytes = send(sockfd, (void *)p, sizeof(PACKET), 0);
   if (DEBUG == ON) {
-    printf("sent \n%s%d bytes\n", p->message, bytes);
+    printf("--- sent %d bytes ---\n");
   }
 }
 
@@ -61,5 +64,6 @@ void send_packet(int sockfd, PACKET *p) {
  * Prints the contents of a PACKET
  */
 void printp(PACKET *p) {
-  printf("%s: %s\n", p->sender_nick, p->message);
+  printf("%s: %s", p->sender_nick, p->message); // messages have \n at the end
 }
+

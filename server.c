@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
   hints.ai_flags = AI_PASSIVE; // fill in my ip for me
 
   if (getaddrinfo(NULL, argv[1], &hints, &servinfo) != 0) {
-    fprintf(stderr, "getaddrinfo error");
+    fprintf(stderr, "--- getaddrinfo error ---\n");
     return EXIT_FAILURE;
   }
 
@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
 
   listen(sockfd, BACKLOG);
 
-  printf("waiting for connections...\n");
+  printf("--- waiting for connections ---\n");
 
   // accept() loop
   while (1) {
@@ -61,18 +61,18 @@ int main(int argc, char **argv) {
               //get_in_addr((struct sockaddr *)&client_addr),
               ip4,
               sizeof(ip4));
-    printf("got connection from %s\n", ip4);
+    printf("--- got connection from %s ---\n", ip4);
     // recv()
     while (1) {
       PACKET p;
       memset(&p, 0, sizeof(PACKET));
       int bytes = recv(new_fd, (void *)&p, sizeof(PACKET), 0);
       if (!bytes) {
-        fprintf(stderr, "connection lost");
+        fprintf(stderr, "--- connection lost ---");
         break;
       }
       if (DEBUG == ON) {
-        printf("received %d bytes\n", bytes);
+        printf("--- received %d bytes ---\n", bytes);
       }
       // print the packet
       printp(&p);
