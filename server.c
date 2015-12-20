@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
     while (1) {
       PACKET p;
       memset(&p, 0, sizeof(PACKET));
-      int bytes = recv(new_fd, (void *)&p, MSG_LEN + NICK_LEN, 0);
+      int bytes = recv(new_fd, (void *)&p, sizeof(PACKET), 0);
       if (!bytes) {
         fprintf(stderr, "connection lost");
         break;
