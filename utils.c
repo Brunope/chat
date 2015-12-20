@@ -44,7 +44,7 @@ void send_msg(USER *sender, char *msg) {
   strcpy(p.sender_nick, sender->nick);
   strcpy(p.message, msg);
   if (DEBUG == ON) {
-    printf("sending '%s' from '%s' %lu bytes", p.message, p.sender_nick,
+    printf("sending \n%s from '%s' %lu bytes\n", p.message, p.sender_nick,
            sizeof(PACKET));
   }
   send_packet(sender->sockfd, &p);
@@ -53,7 +53,7 @@ void send_msg(USER *sender, char *msg) {
 void send_packet(int sockfd, PACKET *p) {
   int bytes = send(sockfd, (void *)p, sizeof(PACKET), 0);
   if (DEBUG == ON) {
-    printf("sent %s(%d bytes)\n", p->message, bytes);
+    printf("sent \n%s%d bytes\n", p->message, bytes);
   }
 }
 
