@@ -61,7 +61,7 @@ void *listener(void *user) {
       break;
     } else if (recvd > 0) {
       if (DEBUG == ON) {
-        printf("received %d bytes", recvd);
+        printf("received %d bytes\n", recvd);
       }
       printp(&p);
     }
