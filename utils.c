@@ -56,7 +56,7 @@ void send_msg(USER *sender, char *msg) {
 void send_packet(int sockfd, PACKET *p) {
   int bytes = send(sockfd, (void *)p, sizeof(PACKET), 0);
   if (DEBUG == ON) {
-    printf("--- sent %d bytes ---\n");
+    printf("--- sent %d bytes ---\n", bytes);
   }
 }
 
