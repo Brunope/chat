@@ -60,6 +60,9 @@ void *listener(void *user) {
       fprintf(stderr, "lost listener connection");
       break;
     } else if (recvd > 0) {
+      if (DEBUG == ON) {
+        print("received %d bytes", recvd);
+      }
       printp(&p);
     }
   }
