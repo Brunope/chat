@@ -45,14 +45,13 @@ pthread_t threads[MAX_CLIENTS];
 int main(int argc, char **argv) {
 
   if (argc != 2) {
-    fprintf(stderr, "usage: ./server PORTNO\n");
+    fprintf(stderr, "--- usage: ./server PORTNO ---\n");
     exit(EXIT_FAILURE);
   }
 
-  pthread_mutex_init(&mutex, NULL);  
+  pthread_mutex_init(&mutex, NULL);
 
   struct addrinfo hints, *servinfo;
-
   socklen_t sin_size;
   char ip4[INET_ADDRSTRLEN];
 
@@ -73,9 +72,9 @@ int main(int argc, char **argv) {
 
   // wait for connections
   listen(sockfd, BACKLOG);
-  if (DEBUG == ON) { printf("--- waiting for connections ---\n"); }
   struct sockaddr_storage client_addr;
   while (1) {
+    if (DEBUG == ON) { printf("--- waiting for connections ---\n"); }
     sin_size = sizeof(client_addr);
     int newfd = accept(sockfd, (struct sockaddr *)&client_addr, &sin_size);
     if (newfd == -1) {
@@ -94,23 +93,6 @@ int main(int argc, char **argv) {
     
     // spawn a client handler, passing the new socket fd
     pthread_create(&threads[num_clients], NULL, handle_client, (void *)&newfd);
-    
-    while (1) {
-      PACKET p;
-      memset(&p, 0, sizeof(PACKET));
-      int bytes = recv(newfd, (void *)&p, sizeof(PACKET), 0);
-      if (!bytes) {
-        fprintf(stderr, "--- connection lost ---");
-        break;
-      }
-      if (DEBUG == ON) {
-        printf("--- received %d bytes ---\n", bytes);
-      }
-      // print the packet
-      printp(&p);
-      // send the message to all connected clients
-      send_packet(newfd, &p);
-    }
   }
 }
 
