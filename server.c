@@ -113,13 +113,14 @@ void *handle_client(void *sock) {
     if (DEBUG == ON) { printf("--- received %d bytes ---\n", bytes); }
 
     printp(&p); // print the packet
-    send_packet(sockfd, &p); // send the message to all connected clients
+    send_to_all(&p); // send the message to all connected clients
     
   }
   pthread_exit(NULL);
 }
 
 void send_to_all(PACKET *p) {
+  if (DEBUG == ON) { printf("dispatching to %d clients", num_clients); }
   pthread_mutex_lock(&mutex);
   // loop through all connected clients, and send p to each
   for (int i = 0; i < num_clients; i++) {
