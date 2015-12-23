@@ -119,7 +119,7 @@ void *handle_client(void *sock) {
 }
 
 void send_to_all(PACKET *p) {
-  if (DEBUG == ON) { printf("dispatching to %d clients", num_clients); }
+  if (DEBUG == ON) { printf("--- dispatching to %d clients ---\n", num_clients); }
   pthread_mutex_lock(&mutex);
   // loop through all connected clients, and send p to each
   for (int i = 0; i < num_clients; i++) {
