@@ -67,8 +67,6 @@ void send_data(int sockfd, char *data) {
  * from the message by a ': '. Puts the result in dst.
  */
 void serialize(char *dst, char *nick, char *msg_str) {
-  strcpy(dst, nick);
-  strcpy(dst, ": ");
-  strcpy(dst, msg_str);
+  sprintf(dst, "%s: %s", nick, msg_str);
 }
 
