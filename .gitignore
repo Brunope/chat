@@ -3,3 +3,4 @@ server
 .DS_Store
 client.dSYM
 server.dSYM
+log.txt
