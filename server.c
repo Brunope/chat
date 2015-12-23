@@ -18,7 +18,7 @@
 
 
 void *handle_client(void *sockfd);
-void send_to_all(PACKET *p);
+void send_to_all(char *data);
 void add_client(int sockfd);
 void rm_client(int sockfd);
 
@@ -101,9 +101,9 @@ void *handle_client(void *sock) {
 
   // recv messages from the client
   while (1) {
-    PACKET p;
-    memset(&p, 0, sizeof(PACKET));
-    int bytes = recv(sockfd, (void *)&p, sizeof(PACKET), 0);
+    char data[MSG_LEN];
+    memset(data, 0, sizeof(data));
+    int bytes = recv(sockfd, (void *)data, sizeof(data), 0);
     if (!bytes) {
       if (DEBUG == ON) { printf("--- connection lost from %d ---\n", sockfd); }
       rm_client(sockfd);
@@ -111,19 +111,19 @@ void *handle_client(void *sock) {
     }
     if (DEBUG == ON) { printf("--- received %d bytes ---\n", bytes); }
 
-    printp(&p); // print the packet
-    send_to_all(&p); // send the message to all connected clients
+    printf("%s", data);
+    send_to_all(data); // send the message to all connected clients
     
   }
   pthread_exit(NULL);
 }
 
-void send_to_all(PACKET *p) {
+void send_to_all(char *data) {
   if (DEBUG == ON) { printf("--- dispatching to %d clients ---\n", num_clients); }
   pthread_mutex_lock(&mutex);
   // loop through all connected clients, and send p to each
   for (int i = 0; i < num_clients; i++) {
-    send_packet(clients[i], p);
+    send_data(clients[i], data);
   }
   pthread_mutex_unlock(&mutex);
 }
