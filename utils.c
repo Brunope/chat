@@ -39,31 +39,36 @@ int connect_to_server(const char *address, const char *port) {
  * Takes a message and USER, packages it up with the user nick and sends it.
  */
 void send_msg(USER *sender, char *msg) {
-  PACKET p;
-  memset(&p, 0, sizeof(PACKET));
-  strcpy(p.sender_nick, sender->nick);
-  strcpy(p.message, msg);
-  if (DEBUG == ON) {
-    printf("--- sending %lu bytes from %s ---\n", sizeof(PACKET), p.sender_nick);
-  }
-  send_packet(sender->sockfd, &p);
+  char message[MSG_LEN];
+  memset(message, 0, sizeof(message));
+  serialize(message, sender->nick, msg);
+  /* if (DEBUG == ON) { */
+  /*   printf("--- sending %lu bytes from %s ---\n", sizeof(PACKET), p.sender_nick); */
+  /* } */
+  send_data(sender->sockfd, message);
 }
 
 /**
- * Takes a PACKET and a socket file descriptor, and sends the packet through
- * the socket.
+ * Takes a socket file descriptor and a string and sends the string through the
+ * socket.
  */
-void send_packet(int sockfd, PACKET *p) {
-  int bytes = send(sockfd, (void *)p, sizeof(PACKET), 0);
-  if (DEBUG == ON) {
-    printf("--- sent %d bytes ---\n", bytes);
+void send_data(int sockfd, char *data) {
+  int bytes = send(sockfd, data, MSG_LEN, 0);
+  if (bytes != MSG_LEN) {
+    fprintf(stderr, "only sent %d bytes\n", bytes);
   }
+  /* if (DEBUG == ON) { */
+  /*   printf("--- sent %d bytes ---\n", bytes); */
+  /* } */
 }
 
 /**
- * Prints the contents of a PACKET
+ * Formats a nick and message string into one string, with the nick separated
+ * from the message by a ': '. Puts the result in dst.
  */
-void printp(PACKET *p) {
-  printf("%s: %s", p->sender_nick, p->message); // messages have \n at the end
+void serialize(char *dst, char *nick, char *msg_str) {
+  strcpy(dst, nick);
+  strcpy(dst, ": ");
+  strcpy(dst, msg_str);
 }
 

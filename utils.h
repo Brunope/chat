@@ -1,5 +1,7 @@
-#define MSG_LEN 236
+#define BUFFER_LEN 234
 #define NICK_LEN 20
+#define MSG_LEN BUFFER_LEN + NICK_LEN + 2 // length of serialized messages
+
 #define DEBUG 1
 #define OFF 0
 #define ON 1
@@ -9,12 +11,7 @@ typedef struct USER {
   char nick[NICK_LEN]; // user's name
 } USER;
 
-typedef struct PACKET {
-  char sender_nick[NICK_LEN];
-  char message[MSG_LEN];
-} PACKET;
-
 int connect_to_server(const char *address, const char *port);
 void send_msg(USER *sender, char *msg);
-void send_packet(int sockfd, PACKET *p);
-void printp(PACKET *p);
+void send_data(int sockfd, char *data);
+void serialize(char *dst, char *nick, char *msg_str);

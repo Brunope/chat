@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -g -std=gnu99 -pthread
-CLIENT_FILES = client.c utils.c
+CFLAGS = -g -std=gnu99 -Wall -pthread -lncurses
+CLIENT_FILES = client.c utils.c mlist.c
 SERVER_FILES = server.c utils.c
 
 all: client-server

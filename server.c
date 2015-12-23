@@ -38,9 +38,8 @@ pthread_mutex_t mutex;
 pthread_t threads[MAX_CLIENTS];
 
 /**
- * Supply 2 extra args.
+ * Supply 1 extra arg.
  * argv[1] - the address of the server to connect to.
- * argv[2] - the port number on which to connect.
  */
 int main(int argc, char **argv) {
 
