@@ -11,7 +11,7 @@
 #include <pthread.h>
 #include <curses.h>
 
-//#include "utils.h"
+// #include "utils.h" mlist uses utils so we don't need to include it here
 #include "mlist.h"
 
 #define NUM_THREADS 2
@@ -45,16 +45,6 @@ int main(int argc, char **argv) {
     }
   }
 
-  // initialize ncurses
-  int row, col; // number of rows, columns of the ncurses window
-  initscr();
-  getmaxyx(stdscr,row,col);
-  WINDOW *display_win = newwin(row - 1, col, 0, 0);
-  WINDOW *input_win = newwin(1, col, row - 1, 0);
-
-  // set the max number of messages to be the window size minus 1 line for input
-  int max_messages = row - 1;
-
   // initialize socket connection
   USER self;
   memset(&self, 0, sizeof(USER));
@@ -68,13 +58,22 @@ int main(int argc, char **argv) {
   pthread_create(&threads[0], NULL, listener, (void *) &self);
   if (DEBUG == ON) { fprintf(flog, "started socket listener\n"); }
 
+  // initialize ncurses
+  int row, col; // number of rows, columns of the ncurses window
+  initscr();
+  getmaxyx(stdscr,row,col);
+  WINDOW *display_win = newwin(row - 1, col, 0, 0);
+  WINDOW *input_win = newwin(1, col, row - 1, 0);
+  
+  // set the max number of messages to be the window size minus 1 line for input
+  int max_messages = row - 1;
+  
   // get input data whenever it's there; in the meantime refresh our window
   char input_message[BUFFER_LEN];
   memset(input_message, 0, sizeof(input_message));
   char *current_input = input_message;
   nodelay(input_win, TRUE); // make getch non-blocking
-  wprintw(input_win, ":"); // draw input colon
-  wmove(input_win, 0, 2);
+  mvwprintw(input_win, 0, 0, ": ");
   wrefresh(input_win);
   while (1) {
     int c = wgetch(input_win);
@@ -82,7 +81,9 @@ int main(int argc, char **argv) {
       // write all the messages that fit in the screen if there are new ones
       if (new_messages == TRUE) {
         display_messages(display_win, mlist_front(), max_messages);
-        refresh();
+        new_messages = FALSE;
+        //  move the cursor back to where it was
+        wmove(input_win, 0, current_input - input_message + 2);
       }
       continue;
     }
@@ -105,9 +106,13 @@ int main(int argc, char **argv) {
     // send the message after a newline
     if (c == 10) {
       send_msg(&self, input_message);
+
+      //clean up
       current_input = input_message;
-      move(row - 1, 1);
-      clrtoeol(); // clear the line
+      wmove(input_win, 0, 0);
+      wclrtoeol(input_win); // clear the line
+      wprintw(input_win, ": ");
+      wrefresh(input_win);
       memset(input_message, 0, sizeof(input_message)); // reset our message
     }
   }
@@ -126,15 +131,16 @@ void *listener(void *user) {
   int recvd;
   while (1) { // read data from the server for new messages
     memset(&message, 0, sizeof(message));
-    recvd = recv(u->sockfd, (void *)message, sizeof(message), 0);
+    recvd = recv(u->sockfd, message, sizeof(message), 0);
     if (!recvd) {
       fprintf(stderr, "lost listener connection\n");
       pthread_exit(NULL);
     } else if (recvd > 0) {
-      if (DEBUG == ON) { fprintf(flog, "received %d bytes ---\n", recvd); }
-      fprintf(stderr, "adding to mlist");
-      mlist_add(message); // add the message to the list
-      fprintf(stderr, "added to mlist");
+      if (DEBUG == ON) {
+        fprintf(flog, "received %d bytes\n", recvd);
+        fprintf(flog, "%s", message);
+      }
+      mlist_add_log(message, flog); // add the message to the list
       new_messages = TRUE; // flag the new messages
     }
   }
@@ -142,7 +148,14 @@ void *listener(void *user) {
 }
 
 void display_messages(WINDOW *display, MESSAGE *front, int max_msgs) {
-  
-  return;
+
+  int i = 1;
+  MESSAGE *current = front;
+  while (i <= max_msgs && current != NULL) {
+    mvwprintw(display, max_msgs - i, 0, current->message);
+    i++;
+    current = current->next;
+  }
+  wrefresh(display);
 }
   

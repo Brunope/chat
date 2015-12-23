@@ -15,6 +15,7 @@ typedef struct MESSAGE {
 
 void mlist_init();
 void mlist_add(char *data);
+void mlist_add_log(char *data, FILE *flog);
 void *mlist_front();
 void mlist_free();
 

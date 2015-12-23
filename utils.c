@@ -38,25 +38,26 @@ int connect_to_server(const char *address, const char *port) {
 /**
  * Takes a message and USER, packages it up with the user nick and sends it.
  */
-void send_msg(USER *sender, char *msg) {
+int send_msg(USER *sender, char *msg) {
   char message[MSG_LEN];
   memset(message, 0, sizeof(message));
   serialize(message, sender->nick, msg);
   /* if (DEBUG == ON) { */
   /*   printf("--- sending %lu bytes from %s ---\n", sizeof(PACKET), p.sender_nick); */
   /* } */
-  send_data(sender->sockfd, message);
+  return send_data(sender->sockfd, message);
 }
 
 /**
  * Takes a socket file descriptor and a string and sends the string through the
  * socket.
  */
-void send_data(int sockfd, char *data) {
+int send_data(int sockfd, char *data) {
   int bytes = send(sockfd, data, MSG_LEN, 0);
   if (bytes != MSG_LEN) {
     fprintf(stderr, "only sent %d bytes\n", bytes);
   }
+  return bytes;
   /* if (DEBUG == ON) { */
   /*   printf("--- sent %d bytes ---\n", bytes); */
   /* } */

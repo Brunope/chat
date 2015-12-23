@@ -12,6 +12,6 @@ typedef struct USER {
 } USER;
 
 int connect_to_server(const char *address, const char *port);
-void send_msg(USER *sender, char *msg);
-void send_data(int sockfd, char *data);
+int send_msg(USER *sender, char *msg);
+int send_data(int sockfd, char *data);
 void serialize(char *dst, char *nick, char *msg_str);
