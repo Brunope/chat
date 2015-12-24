@@ -7,11 +7,16 @@ all: client-server
 
 client-server: client server
 
-client: clean
+client: clean-client
 	$(CC) $(CFLAGS) -o client $(CLIENT_FILES)
 
-server: clean
+server: clean-server
 	$(CC) $(CFLAGS) -o server $(SERVER_FILES)
 
-clean:
-	rm -f client server
+clean: clean-client clean-server
+
+clean-client:
+	rm -f client
+
+clean-server:
+	rm -f server
