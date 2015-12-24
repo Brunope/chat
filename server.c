@@ -111,7 +111,7 @@ void *handle_client(void *sock) {
     }
     if (DEBUG == ON) { printf("--- received %d bytes ---\n", bytes); }
 
-    printf("%s", data);
+    printf("%s\n", data);
     send_to_all(data); // send the message to all connected clients
     
   }
