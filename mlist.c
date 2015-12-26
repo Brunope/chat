@@ -4,6 +4,14 @@
 
 #include "mlist.h"
 
+/**
+ * mlist is an ADT that models a list of messages, sorted by order received. The
+ * front of the mlist is the most recently received message, and the back is
+ * the least recently received message. An important note is that mlist must
+ * be initialized via mlist_init() before any other operations can be done. Once
+ * it is initialized, it has size MLIST_CAPACITY (specified in mlist.h). Every
+ * node has a valid pointer to the next node, but the content of the 
+ */
 MESSAGE *front; // most recent message added to the list
 MESSAGE *back; // least recent message added to the list
 
@@ -55,7 +63,12 @@ void mlist_add(char *data) {
 void mlist_add_log(char *data, FILE *flog) {
   fprintf(flog, "adding to mlist\n");
   mlist_add(data);
-  fprintf(flog, "message log:\n\t%s\t%s", front->message, front->next->message);
+  fprintf(flog, "message log:\n");
+  MESSAGE *current = front;
+  while (current != NULL && *current->message != 0) {
+    fprintf(flog, "\t%s\n", current->message);
+    current = current->next;
+  }
 }
 
 void *mlist_front() {
@@ -64,5 +77,10 @@ void *mlist_front() {
 
 // Free the whole list
 void mlist_free() {
-  return;
+  MESSAGE *current = front;
+  while (current != NULL) {
+    MESSAGE *next = current->next;
+    free(current);
+    current = next;
+  }
 }

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <time.h>
 #include <errno.h>
@@ -133,8 +134,11 @@ int main(int argc, char **argv) {
     // otherwise just write the input to the message
     sprintf(current_input, "%c", c);
     current_input++;
-
   }
+
+  // clean up all our resources
+  mlist_free();
+  close(self.sockfd);
 }
 
 /**
@@ -152,7 +156,7 @@ void *listener(void *user) {
     memset(&message, 0, sizeof(message));
     recvd = recv(u->sockfd, message, sizeof(message), 0);
     if (!recvd) {
-      fprintf(stderr, "lost listener connection\n");
+      if (DEBUG == ON) { fprintf(stderr, "lost listener connection\n"); }
       pthread_exit(NULL);
     } else if (recvd > 0) {
       if (DEBUG == ON) {
@@ -181,7 +185,7 @@ void handle_input(USER *user, char *input) {
     strcpy(user->nick, new_nick);
     // write an event and send it
     char event[BUFFER_LEN];
-    sprintf(event, "--- %s is now known as %s ---\n", old_nick, user->nick);
+    sprintf(event, "--- %s is now known as %s ---", old_nick, user->nick);
     send_data(user->sockfd, event);
   }
   // send the message otherwise

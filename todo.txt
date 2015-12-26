@@ -1,4 +1,4 @@
-- FREE MLIST how could I forget
+- empty message
 - handle message formatting when it's longer than display window
 - window resizes
 - make the server keep track of nicks and stuff, client doesn't need to know
