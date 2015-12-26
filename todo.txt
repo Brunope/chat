@@ -1,8 +1,9 @@
-1. handle message formatting when it's longer than display window
-2. window resizes
-3. make the server keep track of nicks and stuff, client doesn't need to know
+- FREE MLIST how could I forget
+- handle message formatting when it's longer than display window
+- window resizes
+- make the server keep track of nicks and stuff, client doesn't need to know
    about USERs
-4. more separation of the actual chat data transmission and the interface, it's
+- more separation of the actual chat data transmission and the interface, it's
    way too coupled right now
-5. handshake and diffie helman
-6. aes
+- handshake and diffie helman
+- aes
