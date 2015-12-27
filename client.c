@@ -175,13 +175,13 @@ void *listener(void *user) {
 
 void handle_input(USER *user, char *input) {
   // check for /nick
-  char *token = strtok(input, " ");
-  if (strcmp(token, "/nick") == 0) {
+  char *nick_cmd = "/nick";
+  if (strncmp(input, nick_cmd, strlen(nick_cmd)) == 0) {
     // save the old nick real quick
     char old_nick[NICK_LEN];
     strcpy(old_nick, user->nick);
     // set the new one to the token following the command
-    char *new_nick = strtok(NULL, " ");
+    char *new_nick = input + strlen(nick_cmd) + 1;
     strcpy(user->nick, new_nick);
     // write an event and send it
     char event[BUFFER_LEN];
