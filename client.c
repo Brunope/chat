@@ -199,7 +199,7 @@ void display_messages(WINDOW *display, int max_msgs) {
   int i = 1;
   MESSAGE *current = mlist_front();
   while (i <= max_msgs && current != NULL) {
-    mvwprintw(display, max_msgs - i, 0, current->message);
+    mvwprintw(display, max_msgs - i, 0, "%s\n", current->message);
     i++;
     current = current->next;
   }
