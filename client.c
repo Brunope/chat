@@ -81,6 +81,7 @@ int main(int argc, char **argv) {
   memset(input_message, 0, sizeof(input_message));
   char *current_input = input_message;
   nodelay(input_win, TRUE); // make getch non-blocking
+  noecho(); // don't echo keypresses back
   while (1) {
     // it would be great if getstr could be made not to block, but we have to
     // use getch, so we have to do a lot of stuff ourselves.
@@ -93,47 +94,37 @@ int main(int argc, char **argv) {
         //  move the cursor back to where it was
         wmove(input_win, 1, current_input - input_message + 2);
       }
-      continue;
-    }
-
-    if (c == 8 || c == 127) { // backspace or delete
+    } else if (c == 8 || c == 127) { // backspace or delete
       if (current_input > input_message) { // there is something to delete
         wmove(input_win, 1, current_input - input_message + 1);
         wclrtoeol(input_win);
         wrefresh(input_win);
         current_input--;
       }
-      continue;
-    }
-
-    // if we're about to reach the ond of the line, write the current char, then
-    // write a newline, leaving room for the null terminator which we can rely
-    // on being there already from memset. Then send the message.
-    // room for the null terminator which we can rely on being there already
-    // from memset.
-    if (current_input - input_message == col - 3) {
+    } else if (c >= 32 && c <= 126) { // letter, number, or symbol
+      // write the input to the message, print the char to the screen, and
+      // advance the cursor
       sprintf(current_input, "%c", c);
+      if (current_input - input_message == col - 3) {
+        // if we're about to reach the end of the line, set the current char
+        // to \n, so the input gets handled at the end of the loop iteration.
+        c = 10;
+      }
+      mvwprintw(input_win, 1, current_input - input_message + 2, "%c", c);
       current_input++;
-      c = 10;
     }
 
-    // handle the message if we've got a newline
-    if (c == 10) {
+    // handle the message if we've got a newline and the message isn't empty
+    if (c == 10 && current_input > input_message) {
       handle_input(&self, input_message);
-
       //clean up
       current_input = input_message;
       wmove(input_win, 1, 0);
-      wclrtoeol(input_win); // clear the line
-      wprintw(input_win, ": ");
+      wclrtoeol(input_win); // clear the whole line
+      wprintw(input_win, ": "); // reprint the prompt
       wrefresh(input_win);
       memset(input_message, 0, sizeof(input_message)); // reset our message
-      continue;
     }
-
-    // otherwise just write the input to the message
-    sprintf(current_input, "%c", c);
-    current_input++;
   }
 
   // clean up all our resources
