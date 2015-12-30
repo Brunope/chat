@@ -20,7 +20,7 @@
 #define LOG_FILE "log.txt"
   
 void *listener(void *user);
-void display_messages(WINDOW *display, int max_msgs);
+void display_messages(WINDOW *display);
 void handle_input(USER *user, char *input);
 
 FILE *flog; // debug file
@@ -60,17 +60,16 @@ int main(int argc, char **argv) {
   if (DEBUG == ON) { fprintf(flog, "started socket listener\n"); }
 
   // initialize ncurses
-  int row, col; // number of rows, columns of the ncurses window
+  int total_height, total_width; // number of rows, columns of the ncurses window
   initscr();
-  getmaxyx(stdscr,row,col);
-  WINDOW *display_win = newwin(row - 2, col, 0, 0);
-  WINDOW *input_win = newwin(2, col, row - 2, 0);
-
-  // set the max number of messages to height of display window
-  int max_messages = getmaxy(display_win);
+  getmaxyx(stdscr, total_height, total_width);
+  int iw_height = 2;
+  int dw_height = total_height - iw_height;
+  WINDOW *display_win = newwin(dw_height, total_width, 0, 0);
+  WINDOW *input_win = newwin(iw_height, total_width, total_height - iw_height, 0);
   
   // draw the input window
-  for (int i = 0; i < col; i++) {
+  for (int i = 0; i < total_width; i++) {
     mvwprintw(input_win, 0, i, "-");
   }
   mvwprintw(input_win, 1, 0, ": ");
@@ -82,6 +81,7 @@ int main(int argc, char **argv) {
   char *current_input = input_message;
   nodelay(input_win, TRUE); // make getch non-blocking
   noecho(); // don't echo keypresses back
+  int iw_width; // width of input window
   while (1) {
     // it would be great if getstr could be made not to block, but we have to
     // use getch, so we have to do a lot of stuff ourselves.
@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
     if (c == ERR) { // no input
       // write all the messages that fit in the screen if there are new ones
       if (new_messages == TRUE) {
-        display_messages(display_win, max_messages);
+        display_messages(display_win);
         new_messages = FALSE;
         //  move the cursor back to where it was
         wmove(input_win, 1, current_input - input_message + 2);
@@ -105,7 +105,8 @@ int main(int argc, char **argv) {
       // write the input to the message, print the char to the screen, and
       // advance the cursor
       sprintf(current_input, "%c", c);
-      if (current_input - input_message == col - 3) {
+      iw_width = getmaxx(input_win); // recalculate this since window can resize
+      if (current_input - input_message == iw_width - 3) {
         // if we're about to reach the end of the line, set the current char
         // to \n, so the input gets handled at the end of the loop iteration.
         c = 10;
@@ -185,13 +186,34 @@ void handle_input(USER *user, char *input) {
   }
 }
 
-void display_messages(WINDOW *display, int max_msgs) {
+void display_messages(WINDOW *display) {
 
-  int i = 1;
+  int height, width;
+  getmaxyx(display, height, width);
   MESSAGE *current = mlist_front();
-  while (i <= max_msgs && current != NULL) {
-    mvwprintw(display, max_msgs - i, 0, "%s\n", current->message);
+  // print messages from bottom to top, ordered by time received, ie most recent
+  // message is on the bottom
+  int i = 1; // our offset from the bottom
+  while (i <= height && current != NULL) {
+    int chars_left = strlen(current->message);
+    // if message is longer than the width of our window
+    int trail = chars_left % width;
+    mvwprintw(display,
+              height - i,
+              0,
+              "%s\n", current->message + chars_left - trail);
+    chars_left -= trail;
     i++;
+    while (chars_left > 0) {
+      // print the message in chunks of length width or less, with the last
+      // chunk on the bottom
+      mvwprintw(display,
+                height - i,
+                0,
+                "%s\n", current->message + chars_left - width);
+      chars_left -= width;
+      i++;
+    }
     current = current->next;
   }
   wrefresh(display);
