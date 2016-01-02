@@ -1,9 +1,6 @@
-- empty message
-- handle message formatting when it's longer than display window
-- window resizes
-- make the server keep track of nicks and stuff, client doesn't need to know
-   about USERs
+- unnecessary memsets?
 - more separation of the actual chat data transmission and the interface, it's
    way too coupled right now
+- write a test suite
 - handshake and diffie helman
 - aes
