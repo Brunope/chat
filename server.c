@@ -152,7 +152,20 @@ void *handle_client(void *client_void) {
 // it to all connected clients.
 void handle_msg(CLIENT *sender, char *msg) {
   char result[MSG_LEN]; // we'll send this out after processing input
-  // update client nick if they want to change it
+
+  // exit
+  if (strncmp(msg, "/exit", 5) == 0) {
+    // save the nick
+    char nick[NICK_LEN];
+    strcpy(nick, sender->nick);
+    // delete the client
+    rm_client(sender->sockfd);    
+    sprintf(result, "--- %s has disconnected ---", nick);
+    send_to_all(result);
+    pthread_exit(NULL);
+  }
+  
+  // nick change
   if (strncmp(msg, "/nick ", 6) == 0) {
     // save the old nick
     char old_nick[NICK_LEN];
@@ -160,9 +173,12 @@ void handle_msg(CLIENT *sender, char *msg) {
     // update with the new one
     strcpy(sender->nick, msg + 6); // +6 bc we want the string after '/nick '
     // send an update of the change to all connected clients
-    sprintf(result, "%s is now known as %s", old_nick, sender->nick);
+    sprintf(result, "--- %s is now known as %s ---", old_nick, sender->nick);
     send_to_all(result);
-  } else { // otherwise just send the message to all connected clients
+  }
+
+  // otherwise just send the message to all connected clients
+  else {
     sprintf(result, "%s: %s", sender->nick, msg);
     send_to_all(result);
   }
