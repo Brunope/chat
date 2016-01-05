@@ -16,10 +16,12 @@
 #define MAX_CLIENTS 10
 #define DEFAULT_NICK "Anon"
 
+// CLIENT stores all the data we need for an individual client connected to
+// the server.
 typedef struct CLIENT {
   int sockfd;
   char nick[NICK_LEN];
-  char address[INET_ADDRSTRLEN]
+  char address[INET_ADDRSTRLEN];
 } CLIENT;
 
 void *handle_client(void *sockfd);
@@ -32,7 +34,7 @@ void rm_client(int sockfd);
 // clients is a list of socket file descriptors. The indices in the range
 // [0, num_clients-1] contain the file descriptors of every client connecter
 // to the server.
-CLIENT clients[MAX_CLIENTS];
+CLIENT *clients[MAX_CLIENTS];
 
 // num_clients is the number of clients currently connected to the server.
 int num_clients = 0;
@@ -89,22 +91,22 @@ int main(int argc, char **argv) {
       continue;
     }
 
-    // print the ipv4 address of the client
-    if (DEBUG == ON) {
-      inet_ntop(client_addr.ss_family,
-                &(((struct sockaddr_in *)&client_addr)->sin_addr),
-                ip4,
-                sizeof(ip4));
-      printf("--- got connection from %s ---\n", ip4);
-    }
+    // get and print the ipv4 address of the client
+    inet_ntop(client_addr.ss_family,
+              &(((struct sockaddr_in *)&client_addr)->sin_addr),
+              ip4,
+              sizeof(ip4));
+    printf("--- got connection from %s ---\n", ip4);
 
-    // handshake first thing after connecting, and store the result in client
-    CLIENT client;
-    strcpy(client.address, ip4);
-    handshake(&client, newfd);
+    // make a new CLIENT, and copy over its IPv4 address.
+    CLIENT *client = malloc(sizeof(CLIENT));
+    strcpy(client->address, ip4);
+
+    // handshake to generate a nick and whatever else (shared key coming soon)
+    handshake(client, newfd);
     
     // spawn a client handler, passing the new CLIENT
-    pthread_create(&threads[num_clients], NULL, handle_client, (void *)&client);
+    pthread_create(&threads[num_clients], NULL, handle_client, (void *)client);
   }
 }
 
@@ -112,8 +114,11 @@ int main(int argc, char **argv) {
 void handshake(CLIENT *client, int sockfd) {
   client->sockfd = sockfd;
   strcpy(client->nick, DEFAULT_NICK);
-
 }
+
+// monitor the connection with client_void for incoming data, process it, and
+// send the result (usually just the original message plus the sender nick) back
+// out to all targeted clients (usually all connected clients).
 void *handle_client(void *client_void) {
   CLIENT *client = client_void;
   int sockfd = client->sockfd;
@@ -130,16 +135,21 @@ void *handle_client(void *client_void) {
       pthread_exit(NULL);
     }
     if (DEBUG == ON) {
-      printf("--- received %d bytes from %s ---\n", bytes, client->ip4);
+      printf("--- received %d bytes from %s ---\n", bytes, client->address);
     }
     printf("%s: %s\n", client->nick, data);
     
     // process whatever the client sent us
     handle_msg(client, data);
   }
+  rm_client(sockfd);
   pthread_exit(NULL);
 }
 
+// Check if a string begins with a special command, ie '/nick', and update the
+// server's model of the client who sent the command accordingly. If there is
+// no special command, simply bundle the message with the sender's nick and send
+// it to all connected clients.
 void handle_msg(CLIENT *sender, char *msg) {
   char result[MSG_LEN]; // we'll send this out after processing input
   // update client nick if they want to change it
@@ -148,7 +158,7 @@ void handle_msg(CLIENT *sender, char *msg) {
     char old_nick[NICK_LEN];
     strcpy(old_nick, sender->nick);
     // update with the new one
-    strcpy(sender->nick, msg + 6);
+    strcpy(sender->nick, msg + 6); // +6 bc we want the string after '/nick '
     // send an update of the change to all connected clients
     sprintf(result, "%s is now known as %s", old_nick, sender->nick);
     send_to_all(result);
@@ -158,31 +168,38 @@ void handle_msg(CLIENT *sender, char *msg) {
   }
 }
 
+// Send msg to all currently connected clients.
 void send_to_all(char *msg) {
   if (DEBUG == ON) { printf("--- dispatching to %d clients ---\n", num_clients); }
+  // potential race condition - we need a lock because at the same time we
+  // are probably monitoring for inbound connections, which would cause the
+  // addition of a new client to the list. Or an existing client could
+  // disconnect.
   pthread_mutex_lock(&mutex);
   // loop through all connected clients, and send data
   for (int i = 0; i < num_clients; i++) {
-    int bytes = send_data(clients[i].sockfd, msg);
+    int bytes = send_data(clients[i]->sockfd, msg);
     printf("--- sent %d bytes ---\n", bytes);
   }
   pthread_mutex_unlock(&mutex);
 }
 
-
+// Add a client to the list of currently connected clients.
 void add_client(CLIENT *client) {
   pthread_mutex_lock(&mutex);
-  clients[num_clients] = *client;
+  clients[num_clients] = client;
   num_clients++;
   pthread_mutex_unlock(&mutex);
 }
 
+// Remove a client from the list of currently connected clients.
 void rm_client(int sockfd) {
   close(sockfd);
   pthread_mutex_lock(&mutex);
   for (int i = 0; i < num_clients; i++) {
-    if (sockfd == clients[i].sockfd) {
-      // delete the current client and move the rest down by one
+    if (sockfd == clients[i]->sockfd) {
+      // delete the current client and move the rest left 1 index to cover it.
+      free(clients[i]);
       for (int j = i; j < num_clients - 1; j++) {
         clients[j] = clients[j + 1];
       }
