@@ -21,8 +21,12 @@ To run the client, first compile it with
 Then run
 
     ./client ADDRESS PORTNO
-where ADDRESS is the IPv4 address or hostname you figured out before running the server, and PORTNO is the same number you supplied to run the server.
+where ADDRESS is the IPv4 address or hostname you figured out before running the server, and PORTNO is the same number you supplied to run the server. You can run the client and server on the same computer if you want, just give "localhost" as the address when running the client.
 
 Once you've loaded up the client and connected to the server, you can change your nick from the default ('Anon') to whatever you want with the command
 
     /nick NEWNICK
+
+Exit the program with
+
+    /exit
