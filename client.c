@@ -136,6 +136,7 @@ int main(int argc, char **argv) {
   // clean up all our resources
   close(sockfd);
   if (DEBUG == ON) { fclose(flog); }
+  mlist_free();
 }
 
 /**
@@ -194,8 +195,12 @@ void *listener(void *sockfd_void) {
     memset(&message, 0, sizeof(message));
     recvd = recv(sockfd, message, sizeof(message), 0);
     if (!recvd) {
-      if (DEBUG == ON) { fprintf(stderr, "lost listener connection\n"); }
-      pthread_exit(NULL);
+      mlist_free();
+      close(sockfd);
+      if (DEBUG == ON) { fclose(flog); }
+      endwin();
+      if (DEBUG == ON) { fprintf(stderr, "lost connection\n"); }
+      exit(EXIT_SUCCESS);
     } else if (recvd > 0) {
       if (DEBUG == ON) {
         fprintf(flog, "received %d bytes\n", recvd);
@@ -210,7 +215,7 @@ void *listener(void *sockfd_void) {
   mlist_free();
   pthread_exit(NULL);
 }
-
+  
 void display_messages(WINDOW *display) {
 
   int height, width;
