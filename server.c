@@ -19,6 +19,7 @@
 typedef struct CLIENT {
   int sockfd;
   char nick[NICK_LEN];
+  char address[INET_ADDRSTRLEN]
 } CLIENT;
 
 void *handle_client(void *sockfd);
@@ -78,6 +79,7 @@ int main(int argc, char **argv) {
   // wait for connections
   listen(sockfd, BACKLOG);
   struct sockaddr_storage client_addr;
+  
   while (1) {
     if (DEBUG == ON) { printf("--- waiting for connections ---\n"); }
     sin_size = sizeof(client_addr);
@@ -98,6 +100,7 @@ int main(int argc, char **argv) {
 
     // handshake first thing after connecting, and store the result in client
     CLIENT client;
+    strcpy(client.address, ip4);
     handshake(&client, newfd);
     
     // spawn a client handler, passing the new CLIENT
@@ -109,8 +112,8 @@ int main(int argc, char **argv) {
 void handshake(CLIENT *client, int sockfd) {
   client->sockfd = sockfd;
   strcpy(client->nick, DEFAULT_NICK);
-}
 
+}
 void *handle_client(void *client_void) {
   CLIENT *client = client_void;
   int sockfd = client->sockfd;
@@ -126,7 +129,9 @@ void *handle_client(void *client_void) {
       rm_client(sockfd);
       pthread_exit(NULL);
     }
-    if (DEBUG == ON) { printf("--- received %d bytes ---\n", bytes); }
+    if (DEBUG == ON) {
+      printf("--- received %d bytes from %s ---\n", bytes, client->ip4);
+    }
     printf("%s: %s\n", client->nick, data);
     
     // process whatever the client sent us
