@@ -46,7 +46,8 @@ int main(int argc, char **argv) {
 
   // initialize socket connection
   int sockfd = connect_to_server(argv[1], argv[2]);
-  if (sockfd < 0) {
+  if (sockfd == -1) {
+    fprintf(stderr, "could not open socket connection\n");
     if (DEBUG == ON) { fclose(flog); }
     exit(EXIT_FAILURE);
   } else if (DEBUG == ON) {
@@ -154,28 +155,38 @@ int connect_to_server(const char *address, const char *port) {
   int err;
   struct addrinfo *serv;
   if (getaddrinfo(address, port, &hints, &serv) == -1) {
-    err = errno;
-    fprintf(stderr, "Could not look up address");
-    return err;
+    if (DEBUG == ON) {
+      err = errno;
+      fprintf(flog, "Could not look up address, error %d\n", err);
+    }
+    freeaddrinfo(serv); // can't forget to free
+    return -1;
   }
     
 
   // open a socket
   int sockfd = socket(serv->ai_family, serv->ai_socktype, serv->ai_protocol);
   if (sockfd == -1) {
-    err = errno;
-    fprintf(stderr, "Could not open socket\n");
-    return err;
+    if (DEBUG == ON) {
+      err = errno;
+      fprintf(flog, "Could not open socket, error %d\n", err);
+    }
+    freeaddrinfo(serv);
+    return -1;
   }
 
   // connect
   if (connect(sockfd, serv->ai_addr, serv->ai_addrlen) == -1) {
-    err = errno;
-    fprintf(stderr, "Could not connect to %s at %s\n", address, port);
-    return err;
+    if (DEBUG == ON) {
+      err = errno;
+      fprintf(flog, "Could not connect to %s at %s, error %d\n",
+              address, port, err);
+    }
+    freeaddrinfo(serv);
+    return -1;
   }
 
-  freeaddrinfo(serv); // can't forget to free
+  freeaddrinfo(serv);
   return sockfd;
 }
 
