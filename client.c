@@ -12,6 +12,7 @@
 #include <pthread.h>
 #include <curses.h>
 
+#include "utils.h"
 #include "mlist.h"
 
 #define NUM_THREADS 2

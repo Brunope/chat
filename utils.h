@@ -1,3 +1,6 @@
+#ifndef UTILS_H
+#define UTILS_H
+
 #define BUFFER_LEN 234
 #define NICK_LEN 20
 #define MSG_LEN BUFFER_LEN + NICK_LEN + 2 // length of serialized messages
@@ -15,3 +18,5 @@ int connect_to_server(const char *address, const char *port);
 int send_msg(USER *sender, char *msg);
 int send_data(int sockfd, char *data);
 void serialize(char *dst, char *nick, char *msg_str);
+
+#endif
