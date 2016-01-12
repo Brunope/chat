@@ -1,21 +1,17 @@
 #include "utils.h"
 
-#define MLIST_CAPACITY 100
+/**
+ * mlist is a data structure representing a finite sized list of strings in
+ * LIFO order. The most recently added string is returned by mlist_get(0), and
+ * the least recently added string is mlist_get(mlist_size() - 1).
+ */
 
-// A MESSAGE is a node in a cyclical linked list. The list as a whole represents
-// the ordered list of inbound messages from the server. Initially, new nodes
-// (messages) are prepended to the front of the list. Then, when the number of
-// nodes reaches MESSAGE_CACHE_SIZE, the list cycles, and adding a MESSAGE
-// overwrites the MESSAGE previously in that position. The front of the list
-// is always the most recently received MESSAGE.
-typedef struct MESSAGE {
-  char message[MSG_LEN];
-  struct MESSAGE *next;
-} MESSAGE;
+#define MLIST_CAPACITY 100
 
 void mlist_init();
 void mlist_add(char *data);
 void mlist_add_log(char *data, FILE *flog);
-void *mlist_front();
+int mlist_size();
+char *mlist_get(int index);
 void mlist_free();
 

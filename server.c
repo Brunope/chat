@@ -194,7 +194,7 @@ void send_to_all(char *msg) {
   pthread_mutex_lock(&mutex);
   // loop through all connected clients, and send data
   for (int i = 0; i < num_clients; i++) {
-    int bytes = send_data(clients[i]->sockfd, msg);
+    int bytes = send(clients[i]->sockfd, msg, MSG_LEN, 0);
     printf("--- sent %d bytes ---\n", bytes);
   }
   pthread_mutex_unlock(&mutex);

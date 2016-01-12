@@ -232,31 +232,33 @@ void display_messages(WINDOW *display) {
 
   int height, width;
   getmaxyx(display, height, width);
-  MESSAGE *current = mlist_front();
+  int total_messages = mlist_size();
   // print messages from bottom to top, ordered by time received, ie most recent
   // message is on the bottom
-  int i = 1; // our offset from the bottom
-  while (i <= height && current != NULL) {
-    int chars_left = strlen(current->message);
+  int offset = 1;  // our offset from the bottom of the window
+  int counter = 0;
+  while (offset <= height && counter < total_messages) {
+    char *msg = mlist_get(counter);
+    int chars_left = strlen(msg);
     // if message is longer than the width of our window
     int trail = chars_left % width;
     mvwprintw(display,
-              height - i,
+              height - offset,
               0,
-              "%s\n", current->message + chars_left - trail);
+              "%s\n", msg + chars_left - trail);
     chars_left -= trail;
-    i++;
+    offset++;
+    counter++;
     while (chars_left > 0) {
       // print the message in chunks of length width or less, with the last
       // chunk on the bottom
       mvwprintw(display,
-                height - i,
+                height - offset,
                 0,
-                "%s\n", current->message + chars_left - width);
+                "%s\n", msg + chars_left - width);
       chars_left -= width;
-      i++;
+      offset++;
     }
-    current = current->next;
   }
   wrefresh(display);
 }
