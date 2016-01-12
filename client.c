@@ -86,10 +86,11 @@ int main(int argc, char **argv) {
   char *current_input = input_message;
   nodelay(input_win, TRUE); // make getch non-blocking
   noecho(); // don't echo keypresses back
+  keypad(input_win, TRUE); // enable function and arrow keys so we don't echo
   int iw_width; // width of input window
   while (1) {
     // it would be great if getstr could be made not to block, but we have to
-    // use getch, so we have to do a lot of stuff ourselves.
+    // use getch and so we have to do a lot of stuff ourselves.
     int c = wgetch(input_win);
     if (c == ERR) { // no input
       // write all the messages that fit in the screen if there are new ones
@@ -102,7 +103,7 @@ int main(int argc, char **argv) {
     } else if (c == 8 || c == 127) { // backspace or delete
       if (current_input > input_message) { // there is something to delete
         wmove(input_win, 1, current_input - input_message + 1);
-        wclrtoeol(input_win);
+        wclrtoeol(input_win); // position the cursor and delete the char
         wrefresh(input_win);
         current_input--;
       }
@@ -123,22 +124,18 @@ int main(int argc, char **argv) {
     // send the message if we've got a newline and the message isn't empty
     if (c == 10 && current_input > input_message) {
       send(sockfd, input_message, BUFFER_LEN, 0);
-      //send_data(sockfd, input_message);
-      //handle_input(&self, input_message);
       //clean up
       current_input = input_message;
-      wmove(input_win, 1, 0);
-      wclrtoeol(input_win); // clear the whole line
-      wprintw(input_win, ": "); // reprint the prompt
+      wmove(input_win, 1, 2);
+      wclrtoeol(input_win); // clear everything on the line after the prompt
       wrefresh(input_win);
-      memset(input_message, 0, sizeof(input_message)); // reset our message
+      memset(input_message, 0, sizeof(input_message));
     }
   }
 
-  // clean up all our resources
+  // clean up all our resources (listener takes care of freeing mlist)
   close(sockfd);
   if (DEBUG == ON) { fclose(flog); }
-  mlist_free();
 }
 
 /**
