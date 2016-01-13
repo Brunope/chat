@@ -113,7 +113,7 @@ int main(int argc, char **argv) {
 // initialize client with a sockfd and nick, tell client they've connected
 void handshake(CLIENT *client, int sockfd) {
   client->sockfd = sockfd;
-  strcpy(client->nick, DEFAULT_NICK);
+  strncpy(client->nick, DEFAULT_NICK, NICK_LEN);
 }
 
 // monitor the connection with client_void for incoming data, process it, and
@@ -157,10 +157,13 @@ void handle_msg(CLIENT *sender, char *msg) {
   if (strncmp(msg, "/exit", 5) == 0) {
     // save the nick
     char nick[NICK_LEN];
-    strcpy(nick, sender->nick);
+    strncpy(nick, sender->nick, NICK_LEN - 1);
+    nick[NICK_LEN - 1] = '\0';  // since strncpy doesn't implicitly copy the \0
+    
     // delete the client
-    rm_client(sender->sockfd);    
-    sprintf(result, "--- %s has disconnected ---", nick);
+    rm_client(sender->sockfd);
+    // snprintf does make sure there's a \0 though
+    snprintf(result, MSG_LEN, "--- %s has disconnected ---", nick);
     send_to_all(result);
     pthread_exit(NULL);
   }
@@ -169,17 +172,22 @@ void handle_msg(CLIENT *sender, char *msg) {
   if (strncmp(msg, "/nick ", 6) == 0) {
     // save the old nick
     char old_nick[NICK_LEN];
-    strcpy(old_nick, sender->nick);
+    strncpy(old_nick, sender->nick, NICK_LEN - 1);
+    old_nick[NICK_LEN - 1] = '\0';
     // update with the new one
-    strcpy(sender->nick, msg + 6); // +6 bc we want the string after '/nick '
+    strcpy(sender->nick, msg + 6);  // +6 bc we want the string after '/nick '
     // send an update of the change to all connected clients
-    sprintf(result, "--- %s is now known as %s ---", old_nick, sender->nick);
+    snprintf(result,
+             MSG_LEN,
+             "--- %s is now known as %s ---",
+             old_nick,
+             sender->nick);
     send_to_all(result);
   }
 
   // otherwise just send the message to all connected clients
   else {
-    sprintf(result, "%s: %s", sender->nick, msg);
+    snprintf(result, MSG_LEN, "%s: %s", sender->nick, msg);
     send_to_all(result);
   }
 }
