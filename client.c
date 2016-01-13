@@ -21,6 +21,7 @@
   
 void *listener(void *sockfd);
 void display_messages(WINDOW *display);
+int connect_to_server(const char *address, const char *port);
 
 FILE *flog; // debug file
 int new_messages = FALSE; // unread messages flag
