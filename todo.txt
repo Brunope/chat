@@ -1,6 +1,4 @@
 - unnecessary memsets?
-- more separation of the actual chat data transmission and the interface, it's
-   way too coupled right now
 - write a test suite
 - handshake and diffie helman
 - aes

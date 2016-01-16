@@ -1,30 +1,20 @@
+/**
+ * client is the view and controller of the chat client program. It starts the
+ * talker, then loads an ncurses interface. Whenever the user gives input,
+ * client sends the input to the talker. In the meantime (whenever the user
+ * isn't actively entering input), client displays any new messages talker got
+ * from the server.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
-#include <time.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <pthread.h>
 #include <curses.h>
 
+#include "talker.h"
 #include "utils.h"
-#include "mlist.h"
 
-#define NUM_THREADS 2
-#define DEFAULT_NICK "Anon"
-#define LOG_FILE "log.txt"
-  
-void *listener(void *sockfd);
 void display_messages(WINDOW *display);
-int connect_to_server(const char *address, const char *port);
-
-FILE *flog; // debug file
-int new_messages = FALSE; // unread messages flag
 
 /**
  * Supply 2 extra args.
@@ -38,32 +28,11 @@ int main(int argc, char **argv) {
     exit(EXIT_FAILURE);
   }
 
-  // open log file for debugging
-  if (DEBUG == ON) {
-    flog = fopen(LOG_FILE, "w");
-    if (!flog) {
-      fprintf(stderr, "can't open log: %s\n", LOG_FILE);
-    }
-  }
-
-  // initialize socket connection
-  int sockfd = connect_to_server(argv[1], argv[2]);
-  if (sockfd == -1) {
-    fprintf(stderr, "could not open socket connection\n");
-    if (DEBUG == ON) { fclose(flog); }
+  // initialize the talker program - connects to server and starts listening
+  if (talker_init(argv[1], argv[2]) == -1) {
+    fprintf(stderr, "error: could not initialize talker\n");
     exit(EXIT_FAILURE);
-  } else if (DEBUG == ON) {
-    fprintf(flog, "connected to %s at port %s\n", argv[1], argv[2]);
   }
-
-  // handshake first thing after we connect
-  //handshake(sockfd); we don't really need to though since we're not getting
-  // a shared key or anything
-  
-  // start listening to the server for messages in the background
-  pthread_t threads[NUM_THREADS];
-  pthread_create(&threads[0], NULL, listener, (void *) &sockfd);
-  if (DEBUG == ON) { fprintf(flog, "started socket listener\n"); }
 
   // initialize ncurses
   int total_height, total_width; // number of rows, columns of the ncurses window
@@ -77,7 +46,7 @@ int main(int argc, char **argv) {
   
   // draw the input window
   char connect_msg[MSG_LEN];
-  snprintf(connect_msg, MSG_LEN, "connected to %s on port %s", argv[1],argv[2]);
+  snprintf(connect_msg, MSG_LEN, "connected to %s on port %s-", argv[1],argv[2]);
   for (int i = 0; i < iw_width - strlen(connect_msg); i++) {
     mvwprintw(input_win, 0, i, "-");
   }
@@ -85,20 +54,20 @@ int main(int argc, char **argv) {
   mvwprintw(input_win, 1, 0, ": ");
   wrefresh(input_win);
 
-  nodelay(input_win, TRUE); // make getch non-blocking
-  noecho(); // don't echo keypresses back
-  keypad(input_win, TRUE); // enable function and arrow keys so we don't echo
+  nodelay(input_win, TRUE);  // make getch non-blocking
+  noecho();                  // don't echo keypresses back
+  keypad(input_win, TRUE);   // enable function and arrow keys so we don't echo
 
   // get input data whenever it's there; in the meantime refresh our window
   char input_message[BUFFER_LEN];
   memset(input_message, 0, sizeof(input_message));
   char *current_input = input_message;
-  while (1) {
-    iw_width = getmaxx(input_win); //  recalculate since window can resize
+  while (talker_is_connected()) {
+    iw_width = getmaxx(input_win);  // recalculate since window can resize
     // it would be great if getstr could be made not to block, but we have to
     // use getch and so we have to do a lot of stuff ourselves.
     int c = wgetch(input_win);
-    if (c == ERR) { // no input
+    if (c == ERR) {                 // no input
       // write all the messages that fit in the screen if there are new ones
       if (new_messages == TRUE) {
         display_messages(display_win);
@@ -106,14 +75,14 @@ int main(int argc, char **argv) {
         // move the cursor back to where it was
         wmove(input_win, 1, current_input - input_message + 2);
       }
-    } else if (c == 8 || c == 127) { // backspace or delete
-      if (current_input > input_message) { // there is something to delete
+    } else if (c == 8 || c == 127) {        // backspace or delete
+      if (current_input > input_message) {  // there is something to delete
         wmove(input_win, 1, current_input - input_message + 1);
-        wclrtoeol(input_win); // position the cursor and delete the char
+        wclrtoeol(input_win);  // position the cursor and delete the char
         wrefresh(input_win);
         current_input--;
       }
-    } else if (c >= 32 && c <= 126) { // letter, number, or symbol
+    } else if (c >= 32 && c <= 126) {       // letter, number, or symbol
       // write the input to the message, print the char to the screen, and
       // advance the cursor
       sprintf(current_input, "%c", c);
@@ -126,121 +95,36 @@ int main(int argc, char **argv) {
       current_input++;
     }
 
-    // send the message if we've got a newline and the message isn't empty
+    // process the message if we've got a newline and the message isn't empty
     if (c == 10 && current_input > input_message) {
-      send(sockfd, input_message, BUFFER_LEN, 0);
+      talker_handle_msg(input_message);
       //clean up
       current_input = input_message;
       wmove(input_win, 1, 2);
-      wclrtoeol(input_win); // clear everything on the line after the prompt
+      wclrtoeol(input_win);  // clear everything on the line after the prompt
       wrefresh(input_win);
       memset(input_message, 0, sizeof(input_message));
     }
   }
 
-  // clean up all our resources (listener takes care of freeing mlist)
-  close(sockfd);
-  if (DEBUG == ON) { fclose(flog); }
-}
+  // clean up all our resources
+  endwin();
+  talker_close();
 
-/**
- * Takes an IPv4 address or hostname and port number and connects. Returns
- *  the new socket file descriptor. Prints an error message to stderr and 
- * exits if something goes wrong.
- */
-int connect_to_server(const char *address, const char *port) {
-  // load the address structs with getaddrinfo()
-  struct addrinfo hints;
-  memset(&hints, 0, sizeof(hints));
-  hints.ai_family = AF_INET; // IPv4 only
-  hints.ai_socktype = SOCK_STREAM; // stream socket
-
-  int err;
-  struct addrinfo *serv;
-  if (getaddrinfo(address, port, &hints, &serv) == -1) {
-    if (DEBUG == ON) {
-      err = errno;
-      fprintf(flog, "Could not look up address, error %d\n", err);
-    }
-    freeaddrinfo(serv); // can't forget to free
-    return -1;
-  }
-    
-
-  // open a socket
-  int sockfd = socket(serv->ai_family, serv->ai_socktype, serv->ai_protocol);
-  if (sockfd == -1) {
-    if (DEBUG == ON) {
-      err = errno;
-      fprintf(flog, "Could not open socket, error %d\n", err);
-    }
-    freeaddrinfo(serv);
-    return -1;
-  }
-
-  // connect
-  if (connect(sockfd, serv->ai_addr, serv->ai_addrlen) == -1) {
-    if (DEBUG == ON) {
-      err = errno;
-      fprintf(flog, "Could not connect to %s at %s, error %d\n",
-              address, port, err);
-    }
-    freeaddrinfo(serv);
-    return -1;
-  }
-
-  freeaddrinfo(serv);
-  return sockfd;
-}
-
-/**
- * Takes a connect()ed sockfd (cast as a void* because this is called from 
- * pthread_create), and reads data from the connection. Each message received
- * is added to a list of messages, (see mlist.c)
- */
-void *listener(void *sockfd_void) {
-  int sockfd = *(int *)sockfd_void;
-
-  mlist_init(); // initialize list of received messages
-
-  char message[MSG_LEN];
-  int recvd;
-  while (1) { // read data from the server for new messages
-    memset(&message, 0, sizeof(message));
-    recvd = recv(sockfd, message, sizeof(message), 0);
-    if (!recvd) {
-      mlist_free();
-      close(sockfd);
-      if (DEBUG == ON) { fclose(flog); }
-      endwin();
-      if (DEBUG == ON) { fprintf(stderr, "lost connection\n"); }
-      exit(EXIT_SUCCESS);
-    } else if (recvd > 0) {
-      if (DEBUG == ON) {
-        fprintf(flog, "received %d bytes\n", recvd);
-        fprintf(flog, "%s\n", message);
-      }
-      // add the message to the list and log it
-      if (DEBUG == ON) { mlist_add_log(message, flog); }
-      else { mlist_add(message); }     
-      new_messages = TRUE; // flag the new messages
-    }
-  }
-  mlist_free();
-  pthread_exit(NULL);
+  return EXIT_SUCCESS;
 }
   
 void display_messages(WINDOW *display) {
 
   int height, width;
   getmaxyx(display, height, width);
-  int total_messages = mlist_size();
+  int total_messages = talker_num_msg();
   // print messages from bottom to top, ordered by time received, ie most recent
   // message is on the bottom
   int offset = 1;  // our offset from the bottom of the window
   int counter = 0;
   while (offset <= height && counter < total_messages) {
-    char *msg = mlist_get(counter);
+    char *msg = talker_get_msg(counter);
     int chars_left = strlen(msg);
     // if message is longer than the width of our window
     int trail = chars_left % width;
