@@ -1,10 +1,9 @@
 Chatter
 =======
-is a chat program consisting of a client and server, written in C with sockets, pthreads, and ncurses. Right now I'm working on implementing encryption!
+A chat program for linux consisting of a client and server, written in C with sockets, pthreads, and ncurses. Right now I'm working on implementing encryption!
 Usage
 -----
-First, you'll need to know the external IPv4 address or hostname of the computer on which you want to run the server. If you don't already know the hostname, you
-can run
+First, you'll need to know the external IPv4 address or hostname of the computer on which you want to run the server. If you don't already know the ip, you can run
 
     curl ifconfig.me
 Now to run the server, compile it first with
