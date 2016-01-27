@@ -17,7 +17,7 @@ server: clean-server
 clean: clean-client clean-server
 
 clean-client:
-	rm -rf src/client/client src/client/client.dSYM
+	rm -rf client client.dSYM
 
 clean-server:
-	rm -rf src/server/server src/server/server.dSYM
+	rm -rf server server.dSYM
